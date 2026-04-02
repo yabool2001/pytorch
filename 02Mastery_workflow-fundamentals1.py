@@ -88,46 +88,52 @@ train_loss_values = []
 test_loss_values = []
 epoch_count = []
 
-for epoch in range(epochs):
+for epoch in range ( epochs ) :
     ### Training
 
     # Put model in training mode (this is the default state of a model)
-    model_0.train()
+    model_0.train ()
 
     # 1. Forward pass on train data using the forward() method inside 
-    y_pred = model_0(X_train)
+    y_pred = model_0 ( X_train )
     # print(y_pred)
 
     # 2. Calculate the loss (how different are our models predictions to the ground truth)
-    loss = loss_fn(y_pred, y_train)
+    loss = loss_fn ( y_pred , y_train )
 
     # 3. Zero grad of the optimizer
-    optimizer.zero_grad()
+    optimizer.zero_grad ()
 
     # 4. Loss backwards
-    loss.backward()
+    loss.backward ()
 
     # 5. Progress the optimizer
-    optimizer.step()
+    optimizer.step ()
+
+    if epoch % 10 == 0:
+        epoch_count.append(epoch)
+        train_loss_values.append(loss.item())
+        test_loss_values.append(loss.item())
+        print(f"Epoch: {epoch} | MAE Train Loss: {loss} | MAE Test Loss: {loss} ")
 
     ### Testing
 
     # Put the model in evaluation mode
-    model_0.eval()
+    model_0.eval ()
 
-    with torch.inference_mode():
+    with torch.inference_mode () :
       # 1. Forward pass on test data
-      test_pred = model_0(X_test)
+        test_pred = model_0(X_test)
 
       # 2. Caculate loss on test data
-      test_loss = loss_fn(test_pred, y_test.type(torch.float)) # predictions come in torch.float datatype, so comparisons need to be done with tensors of the same type
+        test_loss = loss_fn(test_pred, y_test.type(torch.float)) # predictions come in torch.float datatype, so comparisons need to be done with tensors of the same type
 
-      # Print out what's happening
-      if epoch % 10 == 0:
-            epoch_count.append(epoch)
-            train_loss_values.append(loss.item())
-            test_loss_values.append(test_loss.item())
-            print(f"Epoch: {epoch} | MAE Train Loss: {loss} | MAE Test Loss: {test_loss} ")
+        # Print out what's happening
+        if epoch % 10 == 0:
+            epoch_count.append ( epoch )
+            train_loss_values.append ( test_loss.item () )
+            test_loss_values.append ( test_loss.item () )
+            print(f"Epoch: {epoch} | MAE Train Loss: {test_loss} | MAE Test Loss: {test_loss} ")
 
 # Plot the loss curves
 loss_fig = px.line(
