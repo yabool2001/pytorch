@@ -4,27 +4,27 @@ import torch
 import torch.nn as nn
 
 device = torch.accelerator.current_accelerator () .type if torch.accelerator.is_available () else "cpu"
-print ( f"{device=}" )
 print ( f"{torch.__version__=}" )
+print ( f"{device=}" )
 
-w = 0.7 ; b = 0.3 # weight , bias
+weight = 0.7 ; bias = 0.3
 start = 0 ; end = 1 ; step = 0.02
 
 # Input tensor (matrix) of shape (n_samples, n_features) = (50, 1)
 X = torch.arange ( start , end , step ) .unsqueeze ( dim = 1 ) ; print ( f"{X[:5]=} {X.shape=} {X.grad=} {X.is_leaf=}" )
 # Output tensor (matrix) of shape (n_samples, n_outputs) = (50, 1)
-y = w * X + b ; print ( f"{y[:5]=} {y.shape=} {y.grad=} {y.is_leaf=}" )
+y = weight * X + bias ; print ( f"{y[:5]=} {y.shape=} {y.grad=} {y.is_leaf=}" )
 
 # Create a train / test split
-train_split = int ( 0.8 * len ( X ) ) # 80%
+train_split = int ( 0.8 * len ( X ) )
 X_train , y_train = X [ : train_split ] , y [ : train_split ]
 X_test , y_test = X [ train_split : ] , y [ train_split : ]
 
-def plot_predictions(train_data=X_train, 
-                     train_labels=y_train, 
-                     test_data=X_test, 
-                     test_labels=y_test, 
-                     predictions=None):
+def plot_predictions ( train_data = X_train , 
+                     train_labels = y_train , 
+                     test_data = X_test , 
+                     test_labels = y_test , 
+                     predictions = None ) :
     """
     Plots training data, test data and compares predictions.
     """
@@ -60,14 +60,15 @@ def plot_predictions(train_data=X_train,
     fig.update_layout(legend_title_text="")
     fig.show()
 
+plot_predictions ( X_train , y_train , X_test , y_test )
+
 class LinearRegressionModel ( nn.Module ) :
     def __init__ ( self ) :
         super () .__init__ () # call the constructor of the parent class nn.Module
-        self.w = nn.Parameter ( torch.randn ( 1 , requires_grad = True ) ) # create a learnable parameter w (weight) with initial random value 
-        self.b = nn.Parameter ( torch.randn ( 1 , requires_grad = True ) ) # create a learnable parameter b (bias) with initial random value
+        self.linear_layer = nn.Linear ( in_features = 1 , out_features = 1 ) # create a linear layer with 1 input feature and 1 output feature
 
     def forward ( self , x : torch.Tensor ) -> torch.Tensor : # define the forward pass of the model
-        return self.w * x + self.b # pass the input through the linear layer and return the output
+        return self.linear_layer ( x ) # pass the input through the linear layer and return the output
 
 # Create an instance of the model (this is a subclass of nn.Module that contains nn.Parameter(s))
 model_0 = LinearRegressionModel ()
@@ -78,7 +79,7 @@ print ( f"{y_preds=} {y_preds.grad_fn=}" )
 plot_predictions ( predictions = y_preds )
 
 loss_fn = nn.L1Loss () # create a loss function (also known as criterion) for regression problems
-optimizer = torch.optim.SGD ( params = model_0.parameters () , lr = 0.01 ) # create an optimizer for the model's parameters with a learning rate of 0.
+optimizer = torch.optim.SGD ( params = model_0.parameters () , lr = 0.01 ) # create an optimizer for the model's parameters with a learning rate of 0.01
 
 # Set the number of epochs (how many times the model will pass over the training data)
 epochs = 100
