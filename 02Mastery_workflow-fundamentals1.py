@@ -71,83 +71,77 @@ class LinearRegressionModel ( nn.Module ) :
         return self.linear_layer ( x ) # pass the input through the linear layer and return the output
 
 # Create an instance of the model (this is a subclass of nn.Module that contains nn.Parameter(s))
-model_0 = LinearRegressionModel ()
+torch .manual_seed ( 42 ) # set the random seed for reproducibility
+model = LinearRegressionModel ()
+print ( f"{model=}, {list ( model.parameters () )=}" )
 
-with torch.inference_mode () : # turn on inference mode (also known as evaluation mode) to speed up calculations and reduce memory usage
-    y_preds = model_0 ( X_test ) # make predictions with the untrained model
-print ( f"{y_preds=} {y_preds.grad_fn=}" )
-plot_predictions ( predictions = y_preds )
+next ( model.parameters () ) .device
+# Set model to GPU if it's available, otherwise it'll default to CPU
+model .to ( device ) # the device variable was set above to be "cuda" if available or "cpu" if not
+print ( f"{next ( model .parameters () ) .device=}" )
 
-loss_fn = nn.L1Loss () # create a loss function (also known as criterion) for regression problems
-optimizer = torch.optim.SGD ( params = model_0.parameters () , lr = 0.01 ) # create an optimizer for the model's parameters with a learning rate of 0.01
+# Create loss function
+loss_fn = nn.L1Loss ()
+# Create optimizer
+optimizer = torch.optim.SGD ( params = model .parameters () , lr = 0.01 )
+
+torch.manual_seed ( 42 )
 
 # Set the number of epochs (how many times the model will pass over the training data)
 epochs = 100
 
-# Create empty loss lists to track values
-train_loss_values = []
-test_loss_values = []
-epoch_count = []
+# Put data on the available device
+# Without this, error will happen (not all model/data on device)
+X_train = X_train .to ( device )
+X_test = X_test .to ( device )
+y_train = y_train .to ( device )
+y_test = y_test .to ( device )
 
 for epoch in range ( epochs ) :
     ### Training
 
     # Put model in training mode (this is the default state of a model)
-    model_0.train ()
+    model.train ()
 
     # 1. Forward pass on train data using the forward() method inside 
-    y_pred = model_0 ( X_train )
+    y_pred = model ( X_train )
     # print(y_pred)
 
     # 2. Calculate the loss (how different are our models predictions to the ground truth)
     loss = loss_fn ( y_pred , y_train )
 
     # 3. Zero grad of the optimizer
-    optimizer.zero_grad ()
+    optimizer .zero_grad ()
 
     # 4. Loss backwards
-    loss.backward ()
+    loss .backward ()
 
     # 5. Progress the optimizer
-    optimizer.step ()
-
-    if epoch % 10 == 0:
-        epoch_count.append(epoch)
-        train_loss_values.append(loss.item())
-        test_loss_values.append(loss.item())
-        print(f"Epoch: {epoch} | MAE Train Loss: {loss} | MAE Test Loss: {loss} ")
+    optimizer .step ()
 
     ### Testing
 
     # Put the model in evaluation mode
-    model_0.eval ()
+    model .eval ()
 
     with torch.inference_mode () :
       # 1. Forward pass on test data
-        test_pred = model_0(X_test)
+        test_pred = model ( X_test )
 
       # 2. Caculate loss on test data
-        test_loss = loss_fn(test_pred, y_test.type(torch.float)) # predictions come in torch.float datatype, so comparisons need to be done with tensors of the same type
+        test_loss = loss_fn ( test_pred , y_test )
 
-        # Print out what's happening
-        if epoch % 10 == 0:
-            epoch_count.append ( epoch )
-            train_loss_values.append ( test_loss.item () )
-            test_loss_values.append ( test_loss.item () )
-            print(f"Epoch: {epoch} | MAE Train Loss: {test_loss} | MAE Test Loss: {test_loss} ")
+    if epoch % 10 == 0 :
+        print(f"{epoch=} | {loss=} | {test_loss=} ")
+        plot_predictions ( X_train , y_train , X_test , y_test , test_pred )
 
-# Plot the loss curves
-loss_fig = px.line(
-    x=epoch_count + epoch_count,
-    y=train_loss_values + test_loss_values,
-    color=["Train loss"] * len(epoch_count) + ["Test loss"] * len(epoch_count),
-    markers=True,
-    labels={"x": "Epochs", "y": "Loss", "color": "Series"},
-    title="Training and test loss curves",
-    color_discrete_map={
-        "Train loss": "blue",
-        "Test loss": "orange",
-    },
-)
-loss_fig.update_layout(legend_title_text="")
-loss_fig.show()
+# Find our model's learned parameters
+from pprint import pprint # pprint = pretty print, see: https://docs.python.org/3/library/pprint.html 
+print ( f"{model .state_dict ()=}" )
+
+# Turn model into evaluation mode
+model .eval ()
+# Make predictions on the test data
+with torch.inference_mode():
+    y_preds = model ( X_test )
+print( f"{y_preds=}")
